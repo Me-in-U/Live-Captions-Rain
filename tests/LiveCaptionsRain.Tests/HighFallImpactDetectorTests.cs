@@ -5,9 +5,9 @@ namespace LiveCaptionsRain.Tests;
 public sealed class HighFallImpactDetectorTests
 {
     [Fact]
-    public void ShouldFracture_requires_thirty_percent_fall_before_floor_impact()
+    public void ShouldFracture_requires_twenty_five_percent_fall_before_floor_impact()
     {
-        var word = Word(fallDistancePixels: 350, bounds: new PhysicsRect(100, 950, 120, 50));
+        var word = Word(fallDistancePixels: 250, bounds: new PhysicsRect(100, 950, 120, 50));
 
         Assert.True(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, []));
     }
@@ -15,7 +15,7 @@ public sealed class HighFallImpactDetectorTests
     [Fact]
     public void ShouldFracture_ignores_short_falls_even_when_landed()
     {
-        var word = Word(fallDistancePixels: 299, bounds: new PhysicsRect(100, 950, 120, 50));
+        var word = Word(fallDistancePixels: 249, bounds: new PhysicsRect(100, 950, 120, 50));
 
         Assert.False(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, []));
     }
@@ -27,6 +27,15 @@ public sealed class HighFallImpactDetectorTests
         var platform = new PhysicsRect(100, 398, 200, 1);
 
         Assert.True(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, [platform]));
+    }
+
+    [Fact]
+    public void ShouldFracture_uses_other_words_as_landing_surfaces()
+    {
+        var word = Word(fallDistancePixels: 330, bounds: new PhysicsRect(140, 370, 80, 30));
+        var stackedWordTop = new PhysicsRect(120, 398, 120, 1);
+
+        Assert.True(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, [], [stackedWordTop]));
     }
 
     [Fact]
