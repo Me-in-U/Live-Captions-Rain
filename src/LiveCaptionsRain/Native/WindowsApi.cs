@@ -12,6 +12,7 @@ internal static class WindowsApi
     public const int SwMinimize = 6;
     public const int SwRestore = 9;
     public const int VkLButton = 0x01;
+    public const uint GaRoot = 2;
     public const uint GaRootOwner = 3;
     private const int DwmwaExtendedFrameBounds = 9;
     private const int DwmwaCloaked = 14;
@@ -46,6 +47,16 @@ internal static class WindowsApi
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetWindowRect(nint hWnd, out WinRect rect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetCursorPos(out WinPoint point);
+
+    [DllImport("user32.dll")]
+    public static extern nint WindowFromPoint(WinPoint point);
+
+    [DllImport("user32.dll")]
+    public static extern nint GetForegroundWindow();
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -107,4 +118,11 @@ internal readonly struct WinRect
     public readonly int Top;
     public readonly int Right;
     public readonly int Bottom;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal readonly struct WinPoint
+{
+    public readonly int X;
+    public readonly int Y;
 }

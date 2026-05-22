@@ -10,6 +10,7 @@ namespace LiveCaptionsRain.Services;
 internal sealed class DesktopWindowService
 {
     private const int CornerSize = 48;
+    private const int PlatformHeight = 18;
     private readonly int _currentProcessId = Environment.ProcessId;
 
     public IReadOnlyList<WindowColliderSnapshot> GetWindowColliders(ScreenRect monitorBounds, nint overlayHandle)
@@ -41,36 +42,52 @@ internal sealed class DesktopWindowService
         var visibleSurfaces = DesktopWindowPlatformResolver.Resolve(
             snapshots,
             monitorBounds,
-            platformHeight: 18,
+            platformHeight: PlatformHeight,
             cornerSize: CornerSize);
 
         var byHandle = snapshots.ToDictionary(snapshot => snapshot.Handle);
         return visibleSurfaces
             .Where(surface => surface.TopPlatforms.Count > 0 || surface.LeftCornerVisible || surface.RightCornerVisible)
-            .Select(surface =>
-            {
-                var snapshot = byHandle[surface.Handle];
-                var localLeft = snapshot.Bounds.Left - monitorBounds.Left;
-                var localTop = snapshot.Bounds.Top - monitorBounds.Top;
-                var width = snapshot.Bounds.Width;
-                return new WindowColliderSnapshot(
-                    surface.Handle,
-                    snapshot.Title,
-                    surface.TopPlatforms
-                        .Select(segment => new PhysicsRect(
-                            segment.Left - monitorBounds.Left,
-                            segment.Top - monitorBounds.Top,
-                            segment.Width,
-                            segment.Height))
-                        .ToArray(),
-                    surface.LeftCornerVisible
-                        ? new PhysicsRect(localLeft - CornerSize / 2d, localTop - CornerSize / 2d, CornerSize, CornerSize)
-                        : null,
-                    surface.RightCornerVisible
-                        ? new PhysicsRect(localLeft + width - CornerSize / 2d, localTop - CornerSize / 2d, CornerSize, CornerSize)
-                        : null);
-            })
+            .Select(surface => CreateCollider(byHandle[surface.Handle], surface, monitorBounds))
             .ToArray();
+    }
+
+    public bool TryGetWindowCollider(ScreenRect monitorBounds, nint overlayHandle, nint hWnd, out WindowColliderSnapshot collider)
+    {
+        collider = default!;
+        if (hWnd == overlayHandle || hWnd == nint.Zero)
+        {
+            return false;
+        }
+
+        WindowsApi.GetWindowThreadProcessId(hWnd, out var processId);
+        if (processId == _currentProcessId || !TryCreateSnapshot(hWnd, out var snapshot))
+        {
+            return false;
+        }
+
+        if (!DesktopWindowFilter.ShouldUseWindow(snapshot, monitorBounds))
+        {
+            return false;
+        }
+
+        var visibleBounds = snapshot.Bounds.Intersect(monitorBounds);
+        if (visibleBounds is null)
+        {
+            return false;
+        }
+
+        var surface = VisibleTopEdgeResolver.Resolve(
+            [new WindowSurface(snapshot.Handle, visibleBounds.Value)],
+            PlatformHeight,
+            CornerSize).Single();
+        if (surface.TopPlatforms.Count == 0 && !surface.LeftCornerVisible && !surface.RightCornerVisible)
+        {
+            return false;
+        }
+
+        collider = CreateCollider(snapshot, surface, monitorBounds);
+        return true;
     }
 
     private static bool TryCreateSnapshot(nint hWnd, out DesktopWindowSnapshot snapshot)
@@ -101,5 +118,31 @@ internal sealed class DesktopWindowService
             WindowsApi.IsZoomed(hWnd));
 
         return true;
+    }
+
+    private static WindowColliderSnapshot CreateCollider(
+        DesktopWindowSnapshot snapshot,
+        VisibleWindowSurface surface,
+        ScreenRect monitorBounds)
+    {
+        var localLeft = snapshot.Bounds.Left - monitorBounds.Left;
+        var localTop = snapshot.Bounds.Top - monitorBounds.Top;
+        var width = snapshot.Bounds.Width;
+        return new WindowColliderSnapshot(
+            surface.Handle,
+            snapshot.Title,
+            surface.TopPlatforms
+                .Select(segment => new PhysicsRect(
+                    segment.Left - monitorBounds.Left,
+                    segment.Top - monitorBounds.Top,
+                    segment.Width,
+                    segment.Height))
+                .ToArray(),
+            surface.LeftCornerVisible
+                ? new PhysicsRect(localLeft - CornerSize / 2d, localTop - CornerSize / 2d, CornerSize, CornerSize)
+                : null,
+            surface.RightCornerVisible
+                ? new PhysicsRect(localLeft + width - CornerSize / 2d, localTop - CornerSize / 2d, CornerSize, CornerSize)
+                : null);
     }
 }

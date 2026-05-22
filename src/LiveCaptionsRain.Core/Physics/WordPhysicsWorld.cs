@@ -18,7 +18,7 @@ public sealed class WordPhysicsWorld : IDisposable
     private readonly B2WorldId _worldId;
     private readonly List<PhysicsWordBody> _words = [];
     private readonly List<B2BodyId> _boundaryBodies = [];
-    private readonly List<B2BodyId> _platformBodies = [];
+    private readonly List<PlatformBody> _platformBodies = [];
     private bool _disposed;
 
     public WordPhysicsWorld(ScreenRect bounds)
@@ -97,21 +97,38 @@ public sealed class WordPhysicsWorld : IDisposable
     public void SetWindowPlatforms(IEnumerable<PhysicsRect> platforms)
     {
         ThrowIfDisposed();
-        DestroyBodies(_platformBodies);
+        var nextPlatforms = platforms
+            .Where(platform => platform.Width >= 32 && platform.Height >= 1)
+            .OrderBy(platform => platform.Left)
+            .ThenBy(platform => platform.Top)
+            .ThenBy(platform => platform.Width)
+            .ToArray();
 
-        foreach (var platform in platforms)
+        if (CanMoveExistingPlatforms(nextPlatforms))
         {
-            if (platform.Width < 32 || platform.Height < 1)
+            for (var index = 0; index < nextPlatforms.Length; index++)
             {
-                continue;
+                var platform = nextPlatforms[index];
+                b2Body_SetTransform(
+                    _platformBodies[index].BodyId,
+                    ToWorld(platform.CenterX, platform.Top + PlatformThicknessPixels / 2d),
+                    b2Rot_identity);
             }
 
-            _platformBodies.Add(CreateStaticBox(
+            return;
+        }
+
+        DestroyPlatformBodies();
+
+        foreach (var platform in nextPlatforms)
+        {
+            var bodyId = CreateStaticBox(
                 platform.CenterX,
                 platform.Top + PlatformThicknessPixels / 2d,
                 platform.Width,
                 PlatformThicknessPixels,
-                "window-top"));
+                "window-top");
+            _platformBodies.Add(new PlatformBody(bodyId, platform.Width));
         }
     }
 
@@ -223,10 +240,28 @@ public sealed class WordPhysicsWorld : IDisposable
         }
 
         Clear();
-        DestroyBodies(_platformBodies);
+        DestroyPlatformBodies();
         DestroyBodies(_boundaryBodies);
         b2DestroyWorld(_worldId);
         _disposed = true;
+    }
+
+    private bool CanMoveExistingPlatforms(IReadOnlyList<PhysicsRect> nextPlatforms)
+    {
+        if (_platformBodies.Count != nextPlatforms.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < nextPlatforms.Count; index++)
+        {
+            if (Math.Abs(_platformBodies[index].Width - nextPlatforms[index].Width) > 0.5d)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private B2BodyId CreateStaticBox(double centerX, double centerY, double width, double height, string name)
@@ -284,6 +319,16 @@ public sealed class WordPhysicsWorld : IDisposable
         bodies.Clear();
     }
 
+    private void DestroyPlatformBodies()
+    {
+        foreach (var platform in _platformBodies)
+        {
+            b2DestroyBody(platform.BodyId);
+        }
+
+        _platformBodies.Clear();
+    }
+
     private void ThrowIfDisposed()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -321,4 +366,6 @@ public sealed class WordPhysicsWorld : IDisposable
 
         public bool IsDeleting => DeleteAt is not null;
     }
+
+    private sealed record PlatformBody(B2BodyId BodyId, double Width);
 }

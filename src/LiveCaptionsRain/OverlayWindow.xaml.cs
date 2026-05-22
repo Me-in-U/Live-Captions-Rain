@@ -29,7 +29,7 @@ public partial class OverlayWindow : Window
     private static readonly TimeSpan CaptionSettleMaximum = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OverflowFadeDuration = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan StableWindowColliderRefreshInterval = TimeSpan.FromMilliseconds(260);
-    private static readonly TimeSpan DragWindowColliderRefreshInterval = TimeSpan.Zero;
+    private static readonly TimeSpan DragWindowColliderRefreshInterval = TimeSpan.FromMilliseconds(130);
     private const double StableWindowPlatformTolerancePixels = 2d;
     private const double DragWindowPlatformTolerancePixels = 0.25d;
     private const double WordVisualOffsetYPixels = 8d;
@@ -61,6 +61,7 @@ public partial class OverlayWindow : Window
     private int _stableSettleTicks;
     private int _lastReportedWordCount = -1;
     private nint _handle;
+    private nint _dragWindowHandle;
     private bool _isInitialized;
     private bool _isRenderingAttached;
     private TimeSpan _lastSpawnPump = TimeSpan.Zero;
@@ -181,6 +182,7 @@ public partial class OverlayWindow : Window
 
         _windField.Reset();
         _windowPlatforms = [];
+        _dragWindowHandle = nint.Zero;
     }
 
     private void EnsureOverlayActive()
@@ -413,10 +415,21 @@ public partial class OverlayWindow : Window
     private void RefreshWindowColliders(TimeSpan now)
     {
         var isDraggingWindow = IsLeftMouseButtonPressed();
+        if (_world is null)
+        {
+            return;
+        }
+
+        if (isDraggingWindow && TryRefreshDraggedWindowCollider())
+        {
+            return;
+        }
+
+        _dragWindowHandle = nint.Zero;
         var refreshInterval = isDraggingWindow
             ? DragWindowColliderRefreshInterval
             : StableWindowColliderRefreshInterval;
-        if (_world is null || !FrameCadence.ShouldRun(now, _lastColliderRefresh, refreshInterval))
+        if (!FrameCadence.ShouldRun(now, _lastColliderRefresh, refreshInterval))
         {
             return;
         }
@@ -425,18 +438,82 @@ public partial class OverlayWindow : Window
         var nextColliders = _settings.StackOnWindows
             ? _desktopWindowService.GetWindowColliders(_absoluteBounds, _handle)
             : [];
+        ApplyWindowColliders(nextColliders, StableWindowPlatformTolerancePixels);
+    }
+
+    private bool TryRefreshDraggedWindowCollider()
+    {
+        if (!_settings.StackOnWindows)
+        {
+            return false;
+        }
+
+        if (!TryResolveDraggedWindowCollider(out var draggedCollider))
+        {
+            return false;
+        }
+
+        var nextColliders = _colliders
+            .Where(collider => collider.Handle != draggedCollider.Handle)
+            .Append(draggedCollider)
+            .ToArray();
+        ApplyWindowColliders(nextColliders, DragWindowPlatformTolerancePixels);
+        return true;
+    }
+
+    private bool TryResolveDraggedWindowCollider(out WindowColliderSnapshot collider)
+    {
+        collider = default!;
+        foreach (var handle in GetDraggedWindowCandidates())
+        {
+            if (handle == nint.Zero)
+            {
+                continue;
+            }
+
+            var root = WindowsApi.GetAncestor(handle, WindowsApi.GaRoot);
+            if (root == nint.Zero)
+            {
+                root = handle;
+            }
+
+            if (_desktopWindowService.TryGetWindowCollider(_absoluteBounds, _handle, root, out collider))
+            {
+                _dragWindowHandle = root;
+                return true;
+            }
+        }
+
+        _dragWindowHandle = nint.Zero;
+        return false;
+    }
+
+    private IEnumerable<nint> GetDraggedWindowCandidates()
+    {
+        if (_dragWindowHandle != nint.Zero)
+        {
+            yield return _dragWindowHandle;
+        }
+
+        if (WindowsApi.GetCursorPos(out var point))
+        {
+            yield return WindowsApi.WindowFromPoint(point);
+        }
+
+        yield return WindowsApi.GetForegroundWindow();
+    }
+
+    private void ApplyWindowColliders(IReadOnlyList<WindowColliderSnapshot> nextColliders, double tolerance)
+    {
         var nextPlatforms = nextColliders.SelectMany(item => item.TopPlatforms).ToArray();
         _colliders = nextColliders;
-        var tolerance = isDraggingWindow
-            ? DragWindowPlatformTolerancePixels
-            : StableWindowPlatformTolerancePixels;
         if (PhysicsRectSetComparer.AreEquivalent(_windowPlatforms, nextPlatforms, tolerance))
         {
             return;
         }
 
         _windowPlatforms = nextPlatforms;
-        _world.SetWindowPlatforms(nextPlatforms);
+        _world?.SetWindowPlatforms(nextPlatforms);
     }
 
     private static bool IsLeftMouseButtonPressed()
