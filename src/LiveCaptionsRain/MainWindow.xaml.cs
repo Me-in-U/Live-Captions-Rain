@@ -384,14 +384,19 @@ public partial class MainWindow : Window
         IReadOnlyList<PhysicsRect> platforms = _settings.StackOnWindows
             ? [GetDemoWindowTopPlatform()]
             : [];
-        foreach (var word in _demoWorld.Snapshot())
+        var snapshots = _demoWorld.Snapshot();
+        foreach (var word in snapshots)
         {
             if (word.IsDeleting || _handledDemoHighFallImpacts.Contains(word.Id))
             {
                 continue;
             }
 
-            if (!HighFallImpactDetector.ShouldFracture(word, _demoWorld.Bounds.Height, platforms))
+            var wordTopPlatforms = snapshots
+                .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
+                .Select(candidate => new PhysicsRect(candidate.Bounds.Left, candidate.Bounds.Top, candidate.Bounds.Width, 1));
+
+            if (!HighFallImpactDetector.ShouldFracture(word, _demoWorld.Bounds.Height, platforms, wordTopPlatforms))
             {
                 continue;
             }

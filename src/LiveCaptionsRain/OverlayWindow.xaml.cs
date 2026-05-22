@@ -429,7 +429,8 @@ public partial class OverlayWindow : Window
             platforms = [];
         }
 
-        foreach (var word in _world.Snapshot())
+        var snapshots = _world.Snapshot();
+        foreach (var word in snapshots)
         {
             if (word.IsDeleting)
             {
@@ -441,7 +442,11 @@ public partial class OverlayWindow : Window
                 continue;
             }
 
-            if (!HighFallImpactDetector.ShouldFracture(word, _world.Bounds.Height, platforms))
+            var wordTopPlatforms = snapshots
+                .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
+                .Select(candidate => new PhysicsRect(candidate.Bounds.Left, candidate.Bounds.Top, candidate.Bounds.Width, 1));
+
+            if (!HighFallImpactDetector.ShouldFracture(word, _world.Bounds.Height, platforms, wordTopPlatforms))
             {
                 continue;
             }

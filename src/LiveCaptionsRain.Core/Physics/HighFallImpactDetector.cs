@@ -2,7 +2,7 @@ namespace LiveCaptionsRain.Core.Physics;
 
 public static class HighFallImpactDetector
 {
-    public const double FallDistanceRatio = 0.3d;
+    public const double FallDistanceRatio = 0.25d;
 
     private const double LandingTolerancePixels = 32d;
     private const double FloorTolerancePixels = 4d;
@@ -10,7 +10,8 @@ public static class HighFallImpactDetector
     public static bool ShouldFracture(
         PhysicsWordSnapshot word,
         double screenHeight,
-        IEnumerable<PhysicsRect> windowTopPlatforms)
+        IEnumerable<PhysicsRect> windowTopPlatforms,
+        IEnumerable<PhysicsRect>? wordTopPlatforms = null)
     {
         if (!word.HighFallFractureEnabled || screenHeight <= 0)
         {
@@ -27,7 +28,8 @@ public static class HighFallImpactDetector
             return true;
         }
 
-        return windowTopPlatforms.Any(platform => IsLandingOnPlatform(word.Bounds, platform));
+        return windowTopPlatforms.Any(platform => IsLandingOnPlatform(word.Bounds, platform))
+            || (wordTopPlatforms?.Any(platform => IsLandingOnPlatform(word.Bounds, platform)) == true);
     }
 
     private static bool IsLandingOnPlatform(PhysicsRect wordBounds, PhysicsRect platform)
