@@ -1,0 +1,12 @@
+bin/
+obj/
+**/bin/
+**/obj/
+.vs/
+.superpowers/
+*.user
+*.suo
+artifacts/
+publish/
+*.log
+*.tmp
