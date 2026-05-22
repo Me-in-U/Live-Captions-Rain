@@ -21,11 +21,12 @@ public static class WordFractureService
         }
 
         var hitIndex = Math.Clamp((int)Math.Floor(elements.Count * Math.Clamp(hitRatio, 0, 0.999999)), 0, elements.Count - 1);
-        if (elements[hitIndex].Length == 1 && HangulFragmenter.IsHangulSyllable(elements[hitIndex][0]))
+        var decomposedHitElement = UnicodeTextElementFragmenter.DecomposeTextElement(elements[hitIndex]);
+        if (IsDecomposed(elements[hitIndex], decomposedHitElement))
         {
             var fragments = new List<string>();
             AddIfNotEmpty(fragments, string.Concat(elements.Take(hitIndex)));
-            fragments.AddRange(HangulFragmenter.DecomposeSyllable(elements[hitIndex][0]));
+            fragments.AddRange(decomposedHitElement);
             AddIfNotEmpty(fragments, string.Concat(elements.Skip(hitIndex + 1)));
             return fragments;
         }
@@ -45,10 +46,10 @@ public static class WordFractureService
             return [];
         }
 
-        var elements = GetTextElements(text);
+        var elements = UnicodeTextElementFragmenter.DecomposeTextElements(GetTextElements(text));
         if (elements.Count <= 1)
         {
-            return TryDecomposeSingleElement(elements[0]);
+            return elements;
         }
 
         var maxFragments = Math.Min(MaxRandomFragmentCount, elements.Count);
@@ -75,12 +76,7 @@ public static class WordFractureService
 
     private static IReadOnlyList<string> TryDecomposeSingleElement(string element)
     {
-        if (element.Length == 1 && HangulFragmenter.IsHangulSyllable(element[0]))
-        {
-            return HangulFragmenter.DecomposeSyllable(element[0]);
-        }
-
-        return [element];
+        return UnicodeTextElementFragmenter.DecomposeTextElement(element);
     }
 
     private static List<string> GetTextElements(string text)
@@ -101,5 +97,10 @@ public static class WordFractureService
         {
             values.Add(value);
         }
+    }
+
+    private static bool IsDecomposed(string original, IReadOnlyList<string> fragments)
+    {
+        return fragments.Count != 1 || !string.Equals(fragments[0], original, StringComparison.Ordinal);
     }
 }
