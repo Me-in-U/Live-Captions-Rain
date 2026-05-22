@@ -37,6 +37,8 @@ public sealed class LocalizationTests
         Assert.Equal("라이브 캡션 표시", korean.ShowLiveCaptions);
         Assert.Equal("Stack on windows", english.StackOnWindows);
         Assert.Equal("창 위에 쌓기", korean.StackOnWindows);
+        Assert.Equal("Break on word piles", english.FractureOnWordPiles);
+        Assert.Equal("단어 더미 충돌 분리", korean.FractureOnWordPiles);
         Assert.Equal("Caption delay (ms)", english.CaptionDelayMilliseconds);
         Assert.Equal("캡션 안정화 지연(ms)", korean.CaptionDelayMilliseconds);
         Assert.Equal("Apply and Save", english.ApplyAndSave);

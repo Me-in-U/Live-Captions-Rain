@@ -60,6 +60,15 @@ public sealed class WordFractureServiceTests
     }
 
     [Fact]
+    public void FractureRandomSegments_keeps_korean_syllables_for_multi_syllable_words()
+    {
+        var fragments = WordFractureService.FractureRandomSegments("안녕하세요", new Random(5));
+
+        Assert.InRange(fragments.Count, 3, 5);
+        Assert.Equal("안녕하세요", string.Concat(fragments));
+    }
+
+    [Fact]
     public void FractureRandomSegments_uses_decomposed_units_for_supported_scripts()
     {
         Assert.Equal(["a", "˘", "´"], WordFractureService.FractureRandomSegments("ắ", new Random(5)));

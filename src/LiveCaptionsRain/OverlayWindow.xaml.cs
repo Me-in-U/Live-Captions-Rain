@@ -442,9 +442,11 @@ public partial class OverlayWindow : Window
                 continue;
             }
 
-            var wordTopPlatforms = snapshots
-                .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
-                .Select(candidate => new PhysicsRect(candidate.Bounds.Left, candidate.Bounds.Top, candidate.Bounds.Width, 1));
+            IEnumerable<PhysicsRect> wordTopPlatforms = _settings.FractureOnWordPiles
+                ? snapshots
+                    .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
+                    .Select(candidate => candidate.Bounds)
+                : [];
 
             if (!HighFallImpactDetector.ShouldFracture(word, _world.Bounds.Height, platforms, wordTopPlatforms))
             {

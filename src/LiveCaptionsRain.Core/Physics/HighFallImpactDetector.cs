@@ -29,7 +29,7 @@ public static class HighFallImpactDetector
         }
 
         return windowTopPlatforms.Any(platform => IsLandingOnPlatform(word.Bounds, platform))
-            || (wordTopPlatforms?.Any(platform => IsLandingOnPlatform(word.Bounds, platform)) == true);
+            || (wordTopPlatforms?.Any(platform => IsLandingOnWordSurface(word.Bounds, platform)) == true);
     }
 
     private static bool IsLandingOnPlatform(PhysicsRect wordBounds, PhysicsRect platform)
@@ -47,5 +47,23 @@ public static class HighFallImpactDetector
 
         return wordBounds.Bottom >= platform.Top - FloorTolerancePixels
             && wordBounds.Bottom <= platform.Top + LandingTolerancePixels;
+    }
+
+    private static bool IsLandingOnWordSurface(PhysicsRect wordBounds, PhysicsRect platform)
+    {
+        if (platform.Width <= 0 || platform.Height <= 0)
+        {
+            return false;
+        }
+
+        var horizontallyOverlaps = wordBounds.Left < platform.Right && wordBounds.Right > platform.Left;
+        if (!horizontallyOverlaps)
+        {
+            return false;
+        }
+
+        var reachesSurfaceTop = wordBounds.Bottom >= platform.Top - FloorTolerancePixels;
+        var staysAboveSurfaceCenter = wordBounds.CenterY <= platform.CenterY;
+        return reachesSurfaceTop && staysAboveSurfaceCenter;
     }
 }
