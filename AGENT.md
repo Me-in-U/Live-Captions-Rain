@@ -2,7 +2,7 @@
 
 ## Project Scope
 
-Falling Words is a Windows-only .NET 8 WPF app. Keep the app focused on Windows Live Captions words falling into a physics overlay.
+Live Captions Rain is a Windows-only .NET 8 WPF app. Keep the app focused on Windows Live Captions words falling into a physics overlay.
 
 - Windows Live Captions is the only text source.
 - Do not add translation, LLM, transcript history, cloud API, analytics, or custom speech recognition unless explicitly requested.
@@ -36,22 +36,22 @@ Use the narrowest meaningful test while developing, then run the full suite befo
 Default commands:
 
 ```powershell
-dotnet build FallingWords.sln --no-restore
-dotnet test FallingWords.sln --no-restore
+dotnet build LiveCaptionsRain.sln --no-restore
+dotnet test LiveCaptionsRain.sln --no-restore
 ```
 
 If the environment uses the repo-local SDK path:
 
 ```powershell
 $dotnet = Join-Path $env:USERPROFILE '.dotnet-codex-sdk\dotnet.exe'
-& $dotnet build FallingWords.sln --no-restore
-& $dotnet test FallingWords.sln --no-restore
+& $dotnet build LiveCaptionsRain.sln --no-restore
+& $dotnet test LiveCaptionsRain.sln --no-restore
 ```
 
 Publish check:
 
 ```powershell
-dotnet publish src\FallingWords\FallingWords.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish src\LiveCaptionsRain\LiveCaptionsRain.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 Run publish verification when changes affect packaging, startup, app icons, project files, runtime dependencies, or release output.
@@ -60,7 +60,7 @@ Run publish verification when changes affect packaging, startup, app icons, proj
 
 Bug fixes require a regression test whenever practical.
 
-- Caption diffing, tokenization, queues, and stabilization belong in `tests\FallingWords.Tests`.
+- Caption diffing, tokenization, queues, and stabilization belong in `tests\LiveCaptionsRain.Tests`.
 - Window collision, visible top-edge resolution, monitor filtering, and fullscreen/top-edge exclusion need focused tests.
 - Settings defaults, persistence, migration behavior, and localization changes need tests.
 - Physics changes should be covered by deterministic unit tests when possible.

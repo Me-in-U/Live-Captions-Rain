@@ -6,7 +6,7 @@ This project expects respectful, constructive participation.
 
 - Be clear and professional.
 - Assume good intent while staying precise about technical risk.
-- Keep discussions focused on Falling Words and user impact.
+- Keep discussions focused on Live Captions Rain and user impact.
 - Respect maintainers' time by providing reproduction steps, logs, and focused pull requests.
 - Redact private caption text, local paths, and identifying information from screenshots or logs.
 

@@ -28,4 +28,4 @@ Do not include local account names, full `%APPDATA%` paths, caption contents, ac
 
 ## Privacy Boundary
 
-Falling Words does not intentionally send caption text, settings, or local window metadata to a remote service. Reports about unexpected network access, unsafe file permissions, or accidental exposure of Live Captions text are in scope.
+Live Captions Rain does not intentionally send caption text, settings, or local window metadata to a remote service. Reports about unexpected network access, unsafe file permissions, or accidental exposure of Live Captions text are in scope.

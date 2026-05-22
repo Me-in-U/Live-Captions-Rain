@@ -1,14 +1,14 @@
 [English](README.md) | [한국어](docs/readme/README.ko.md)
 
-# Falling Words
+# Live Captions Rain
 
-Falling Words is a Windows WPF app that turns Windows Live Captions into a physics-based word overlay. Caption words fall over the selected monitor, pile up on the screen floor, and can optionally stack on visible desktop window tops.
+Live Captions Rain is a Windows WPF app that turns Windows Live Captions into a physics-based word overlay. Caption words fall over the selected monitor, pile up on the screen floor, and can optionally stack on visible desktop window tops.
 
 ## Screenshots
 
 ### Settings
 
-![Falling Words settings window](docs/assets/screenshots/settings.png)
+![Live Captions Rain settings window](docs/assets/screenshots/settings.png)
 
 ## Features
 
@@ -34,8 +34,8 @@ Falling Words is a Windows WPF app that turns Windows Live Captions into a physi
 
 ## Quick Start
 
-1. Enable Windows Live Captions, or let Falling Words launch it.
-2. Launch `FallingWords.exe`.
+1. Enable Windows Live Captions, or let Live Captions Rain launch it.
+2. Launch `LiveCaptionsRain.exe`.
 3. Select the target monitor.
 4. Adjust text style and physics options.
 5. Press **Turn On**.
@@ -44,31 +44,31 @@ Falling Words is a Windows WPF app that turns Windows Live Captions into a physi
 Settings are stored at:
 
 ```text
-%APPDATA%\FallingWords\settings.json
+%APPDATA%\LiveCaptionsRain\settings.json
 ```
 
 ## Build
 
 ```powershell
 dotnet restore
-dotnet build FallingWords.sln
-dotnet test FallingWords.sln
-dotnet publish src\FallingWords\FallingWords.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet build LiveCaptionsRain.sln
+dotnet test LiveCaptionsRain.sln
+dotnet publish src\LiveCaptionsRain\LiveCaptionsRain.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 Generated `artifacts`, `bin`, and `obj` outputs should not be committed.
 
 ## Repository Layout
 
-- `src\FallingWords` - WPF app, settings window, tray integration, overlay, Live Captions adapter, Win32 interop, and rendering controls.
-- `src\FallingWords.Core` - caption processing, settings, localization, physics helpers, wind, window-platform resolution, and word fracture logic.
-- `tests\FallingWords.Tests` - unit tests for captions, settings, localization, physics, window filtering, wind, spawning, and text fracture.
+- `src\LiveCaptionsRain` - WPF app, settings window, tray integration, overlay, Live Captions adapter, Win32 interop, and rendering controls.
+- `src\LiveCaptionsRain.Core` - caption processing, settings, localization, physics helpers, wind, window-platform resolution, and word fracture logic.
+- `tests\LiveCaptionsRain.Tests` - unit tests for captions, settings, localization, physics, window filtering, wind, spawning, and text fracture.
 - `docs` - project documentation and screenshots.
 - `artifacts` - local generated builds and verification screenshots. This directory is ignored by git.
 
 ## Privacy
 
-Falling Words does not record audio and does not send caption text to a remote service. The app reads the text already displayed by Windows Live Captions. Settings are stored locally under `%APPDATA%\FallingWords`.
+Live Captions Rain does not record audio and does not send caption text to a remote service. The app reads the text already displayed by Windows Live Captions. Settings are stored locally under `%APPDATA%\LiveCaptionsRain`.
 
 ## Known Limitations
 

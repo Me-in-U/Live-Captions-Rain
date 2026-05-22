@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking time to improve Falling Words.
+Thanks for taking time to improve Live Captions Rain.
 
 ## Branch Workflow
 
@@ -13,14 +13,14 @@ Keep pull requests small enough to review. Avoid mixing unrelated refactors, gen
 For code changes, run:
 
 ```powershell
-dotnet build FallingWords.sln
-dotnet test FallingWords.sln
+dotnet build LiveCaptionsRain.sln
+dotnet test LiveCaptionsRain.sln
 ```
 
 For release or packaging changes, also verify the published executable:
 
 ```powershell
-dotnet publish src\FallingWords\FallingWords.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish src\LiveCaptionsRain\LiveCaptionsRain.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 ## Development Notes

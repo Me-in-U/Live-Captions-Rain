@@ -1,14 +1,14 @@
 [English](../../README.md) | [한국어](README.ko.md)
 
-# Falling Words
+# Live Captions Rain
 
-Falling Words는 Windows Live Captions 단어를 물리 기반 오버레이로 떨어뜨리는 Windows WPF 앱입니다. 캡션 단어가 선택한 모니터 위에서 떨어지고, 화면 바닥에 쌓이며, 선택적으로 보이는 데스크톱 창 상단에도 쌓일 수 있습니다.
+Live Captions Rain은 Windows Live Captions 단어를 물리 기반 오버레이로 떨어뜨리는 Windows WPF 앱입니다. 캡션 단어가 선택한 모니터 위에서 떨어지고, 화면 바닥에 쌓이며, 선택적으로 보이는 데스크톱 창 상단에도 쌓일 수 있습니다.
 
 ## 스크린샷
 
 ### 설정
 
-![Falling Words 설정 창](../assets/screenshots/settings.png)
+![Live Captions Rain 설정 창](../assets/screenshots/settings.png)
 
 ## 주요 기능
 
@@ -34,8 +34,8 @@ Falling Words는 Windows Live Captions 단어를 물리 기반 오버레이로 �
 
 ## 빠른 시작
 
-1. Windows Live Captions를 켜거나 Falling Words가 실행하도록 둡니다.
-2. `FallingWords.exe`를 실행합니다.
+1. Windows Live Captions를 켜거나 Live Captions Rain이 실행하도록 둡니다.
+2. `LiveCaptionsRain.exe`를 실행합니다.
 3. 대상 모니터를 선택합니다.
 4. 텍스트 스타일과 물리 옵션을 조정합니다.
 5. **켜기**를 누릅니다.
@@ -44,31 +44,31 @@ Falling Words는 Windows Live Captions 단어를 물리 기반 오버레이로 �
 설정 파일 위치:
 
 ```text
-%APPDATA%\FallingWords\settings.json
+%APPDATA%\LiveCaptionsRain\settings.json
 ```
 
 ## 빌드
 
 ```powershell
 dotnet restore
-dotnet build FallingWords.sln
-dotnet test FallingWords.sln
-dotnet publish src\FallingWords\FallingWords.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+dotnet build LiveCaptionsRain.sln
+dotnet test LiveCaptionsRain.sln
+dotnet publish src\LiveCaptionsRain\LiveCaptionsRain.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 생성된 `artifacts`, `bin`, `obj` 출력물은 커밋하지 않습니다.
 
 ## 저장소 구조
 
-- `src\FallingWords` - WPF 앱, 설정 창, 트레이, 오버레이, Live Captions 어댑터, Win32 interop, 렌더링 제어
-- `src\FallingWords.Core` - 캡션 처리, 설정, 지역화, 물리 헬퍼, 바람, 창 발판 계산, 단어 분리 로직
-- `tests\FallingWords.Tests` - 캡션, 설정, 지역화, 물리, 창 필터링, 바람, 생성, 텍스트 분리 테스트
+- `src\LiveCaptionsRain` - WPF 앱, 설정 창, 트레이, 오버레이, Live Captions 어댑터, Win32 interop, 렌더링 제어
+- `src\LiveCaptionsRain.Core` - 캡션 처리, 설정, 지역화, 물리 헬퍼, 바람, 창 발판 계산, 단어 분리 로직
+- `tests\LiveCaptionsRain.Tests` - 캡션, 설정, 지역화, 물리, 창 필터링, 바람, 생성, 텍스트 분리 테스트
 - `docs` - 프로젝트 문서와 스크린샷
 - `artifacts` - 로컬 빌드 결과와 검증 스크린샷. git에서 제외됩니다.
 
 ## 개인정보
 
-Falling Words는 오디오를 녹음하지 않고 캡션 텍스트를 원격 서비스로 보내지 않습니다. 앱은 Windows Live Captions에 이미 표시된 텍스트만 읽습니다. 설정은 `%APPDATA%\FallingWords` 아래에 로컬로 저장됩니다.
+Live Captions Rain은 오디오를 녹음하지 않고 캡션 텍스트를 원격 서비스로 보내지 않습니다. 앱은 Windows Live Captions에 이미 표시된 텍스트만 읽습니다. 설정은 `%APPDATA%\LiveCaptionsRain` 아래에 로컬로 저장됩니다.
 
 ## 알려진 제한사항
 
