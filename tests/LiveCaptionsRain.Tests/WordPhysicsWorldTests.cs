@@ -68,4 +68,20 @@ public sealed class WordPhysicsWorldTests
         Assert.True(words[leftId].Bounds.CenterX < 100);
         Assert.True(words[rightId].Bounds.CenterX > 400);
     }
+
+    [Fact]
+    public void Window_platforms_respect_rect_height_for_vertical_side_walls()
+    {
+        using var world = new WordPhysicsWorld(new ScreenRect(0, 0, 600, 500));
+        world.SetWindowPlatforms([new PhysicsRect(220, 0, 36, 500)]);
+        var id = world.AddWord("push", new PhysicsRect(270, 180, 30, 24));
+
+        for (var i = 0; i < 120; i++)
+        {
+            world.Step(1d / 60d, _ => new WindVector(-900, 0));
+        }
+
+        var word = Assert.Single(world.Snapshot().Where(item => item.Id == id));
+        Assert.True(word.Bounds.Left >= 250);
+    }
 }

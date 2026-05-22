@@ -13,7 +13,6 @@ public sealed class WordPhysicsWorld : IDisposable
 {
     private const float PixelsPerMeter = 100f;
     private const float BoundaryThicknessPixels = 120f;
-    private const float PlatformThicknessPixels = 36f;
 
     private readonly B2WorldId _worldId;
     private readonly List<PhysicsWordBody> _words = [];
@@ -102,6 +101,7 @@ public sealed class WordPhysicsWorld : IDisposable
             .OrderBy(platform => platform.Left)
             .ThenBy(platform => platform.Top)
             .ThenBy(platform => platform.Width)
+            .ThenBy(platform => platform.Height)
             .ToArray();
 
         if (CanMoveExistingPlatforms(nextPlatforms))
@@ -111,7 +111,7 @@ public sealed class WordPhysicsWorld : IDisposable
                 var platform = nextPlatforms[index];
                 b2Body_SetTransform(
                     _platformBodies[index].BodyId,
-                    ToWorld(platform.CenterX, platform.Top + PlatformThicknessPixels / 2d),
+                    ToWorld(platform.CenterX, platform.CenterY),
                     b2Rot_identity);
             }
 
@@ -125,11 +125,11 @@ public sealed class WordPhysicsWorld : IDisposable
         {
             var bodyId = CreateStaticBox(
                 platform.CenterX,
-                platform.Top + PlatformThicknessPixels / 2d,
+                platform.CenterY,
                 platform.Width,
-                PlatformThicknessPixels,
-                "window-top");
-            _platformBodies.Add(new PlatformBody(bodyId, platform.Width));
+                platform.Height,
+                "window-platform");
+            _platformBodies.Add(new PlatformBody(bodyId, platform.Width, platform.Height));
         }
 
         WakeWords();
@@ -262,6 +262,11 @@ public sealed class WordPhysicsWorld : IDisposable
             {
                 return false;
             }
+
+            if (Math.Abs(_platformBodies[index].Height - nextPlatforms[index].Height) > 0.5d)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -378,5 +383,5 @@ public sealed class WordPhysicsWorld : IDisposable
         public bool IsDeleting => DeleteAt is not null;
     }
 
-    private sealed record PlatformBody(B2BodyId BodyId, double Width);
+    private sealed record PlatformBody(B2BodyId BodyId, double Width, double Height);
 }

@@ -44,7 +44,8 @@
                                 <CheckBox x:Name="UseAllMonitorsCheck" Content="All monitors" />
                                 <CheckBox x:Name="ClickThroughCheck" Content="Click-through" />
                                 <CheckBox x:Name="InteractionModeCheck" Content="Interaction mode" />
-                                <CheckBox x:Name="StackOnWindowsCheck" Content="Stack on windows" />
+                                <CheckBox x:Name="StackOnWindowsCheck" Content="Stack on windows" Checked="DemoPlatformSettings_Changed" Unchecked="DemoPlatformSettings_Changed" />
+                                <CheckBox x:Name="WindowSideWallsCheck" Content="Window side walls" Checked="DemoPlatformSettings_Changed" Unchecked="DemoPlatformSettings_Changed" />
                                 <CheckBox x:Name="FractureOnWordPilesCheck" Content="Break on word piles" />
                                 <CheckBox x:Name="RandomWindCheck" Content="Random wind" Checked="DemoWindSettings_Changed" Unchecked="DemoWindSettings_Changed" />
                             </WrapPanel>

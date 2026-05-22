@@ -11,9 +11,11 @@ internal sealed class DesktopWindowService
 {
     private const int CornerSize = 48;
     private const int PlatformHeight = 18;
+    private const int PlatformCollisionThickness = 36;
+    private const int SideWallThickness = 384;
     private readonly int _currentProcessId = Environment.ProcessId;
 
-    public WindowCollisionState GetWindowCollisionState(ScreenRect monitorBounds, nint overlayHandle)
+    public WindowCollisionState GetWindowCollisionState(ScreenRect monitorBounds, nint overlayHandle, bool includeSideWalls = false)
     {
         var snapshots = new List<DesktopWindowSnapshot>();
 
@@ -42,28 +44,38 @@ internal sealed class DesktopWindowService
         var snapshotArray = snapshots.ToArray();
         return new WindowCollisionState(
             snapshotArray,
-            ResolveWindowColliders(snapshotArray, monitorBounds));
+            ResolveWindowColliders(snapshotArray, monitorBounds, includeSideWalls));
     }
 
-    public IReadOnlyList<WindowColliderSnapshot> GetWindowColliders(ScreenRect monitorBounds, nint overlayHandle)
+    public IReadOnlyList<WindowColliderSnapshot> GetWindowColliders(
+        ScreenRect monitorBounds,
+        nint overlayHandle,
+        bool includeSideWalls = false)
     {
-        return GetWindowCollisionState(monitorBounds, overlayHandle).Colliders;
+        return GetWindowCollisionState(monitorBounds, overlayHandle, includeSideWalls).Colliders;
     }
 
     public IReadOnlyList<WindowColliderSnapshot> ResolveWindowColliders(
         IReadOnlyList<DesktopWindowSnapshot> snapshots,
-        ScreenRect monitorBounds)
+        ScreenRect monitorBounds,
+        bool includeSideWalls = false)
     {
         var visibleSurfaces = DesktopWindowPlatformResolver.Resolve(
             snapshots,
             monitorBounds,
             platformHeight: PlatformHeight,
-            cornerSize: CornerSize);
+            cornerSize: CornerSize,
+            sideWallProbeWidth: includeSideWalls ? SideWallThickness : 0,
+            sideWallTopInset: PlatformCollisionThickness);
 
         var byHandle = snapshots.ToDictionary(snapshot => snapshot.Handle);
         return visibleSurfaces
-            .Where(surface => surface.TopPlatforms.Count > 0 || surface.LeftCornerVisible || surface.RightCornerVisible)
-            .Select(surface => CreateCollider(byHandle[surface.Handle], surface, monitorBounds))
+            .Where(surface => surface.TopPlatforms.Count > 0
+                || surface.LeftSideSegments.Count > 0
+                || surface.RightSideSegments.Count > 0
+                || surface.LeftCornerVisible
+                || surface.RightCornerVisible)
+            .Select(surface => CreateCollider(byHandle[surface.Handle], surface, monitorBounds, includeSideWalls))
             .ToArray();
     }
 
@@ -84,7 +96,12 @@ internal sealed class DesktopWindowService
         return DesktopWindowFilter.ShouldOccludeWindow(snapshot, monitorBounds);
     }
 
-    public bool TryGetWindowCollider(ScreenRect monitorBounds, nint overlayHandle, nint hWnd, out WindowColliderSnapshot collider)
+    public bool TryGetWindowCollider(
+        ScreenRect monitorBounds,
+        nint overlayHandle,
+        nint hWnd,
+        out WindowColliderSnapshot collider,
+        bool includeSideWalls = false)
     {
         collider = default!;
         if (!TryGetWindowSnapshot(monitorBounds, overlayHandle, hWnd, out var snapshot)
@@ -102,13 +119,19 @@ internal sealed class DesktopWindowService
         var surface = VisibleTopEdgeResolver.Resolve(
             [new WindowSurface(snapshot.Handle, visibleBounds.Value)],
             PlatformHeight,
-            CornerSize).Single();
-        if (surface.TopPlatforms.Count == 0 && !surface.LeftCornerVisible && !surface.RightCornerVisible)
+            CornerSize,
+            includeSideWalls ? SideWallThickness : 0,
+            PlatformCollisionThickness).Single();
+        if (surface.TopPlatforms.Count == 0
+            && surface.LeftSideSegments.Count == 0
+            && surface.RightSideSegments.Count == 0
+            && !surface.LeftCornerVisible
+            && !surface.RightCornerVisible)
         {
             return false;
         }
 
-        collider = CreateCollider(snapshot, surface, monitorBounds);
+        collider = CreateCollider(snapshot, surface, monitorBounds, includeSideWalls);
         return true;
     }
 
@@ -145,11 +168,20 @@ internal sealed class DesktopWindowService
     private static WindowColliderSnapshot CreateCollider(
         DesktopWindowSnapshot snapshot,
         VisibleWindowSurface surface,
-        ScreenRect monitorBounds)
+        ScreenRect monitorBounds,
+        bool includeSideWalls)
     {
         var localLeft = snapshot.Bounds.Left - monitorBounds.Left;
         var localTop = snapshot.Bounds.Top - monitorBounds.Top;
         var width = snapshot.Bounds.Width;
+        var topCollisionPlatforms = WindowCollisionRectBuilder.BuildTopCollisionRects(
+            surface,
+            monitorBounds,
+            PlatformCollisionThickness);
+        var sideWalls = WindowCollisionRectBuilder.BuildSideWallRects(
+            surface,
+            monitorBounds,
+            SideWallThickness);
         return new WindowColliderSnapshot(
             surface.Handle,
             snapshot.Title,
@@ -160,6 +192,14 @@ internal sealed class DesktopWindowService
                     segment.Width,
                     segment.Height))
                 .ToArray(),
+            topCollisionPlatforms,
+            sideWalls,
+            WindowCollisionRectBuilder.BuildCollisionRects(
+                surface,
+                monitorBounds,
+                includeSideWalls,
+                PlatformCollisionThickness,
+                SideWallThickness),
             surface.LeftCornerVisible
                 ? new PhysicsRect(localLeft - CornerSize / 2d, localTop - CornerSize / 2d, CornerSize, CornerSize)
                 : null,

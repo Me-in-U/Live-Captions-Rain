@@ -19,6 +19,7 @@ public sealed record LocalizedText
     public required string InteractionMode { get; init; }
     public required string WindowCollision { get; init; }
     public required string StackOnWindows { get; init; }
+    public required string WindowSideWalls { get; init; }
     public required string FractureOnWordPiles { get; init; }
     public required string RandomWind { get; init; }
     public required string SpawnMode { get; init; }
@@ -96,6 +97,7 @@ public sealed record LocalizedText
         InteractionMode = "Click interaction",
         WindowCollision = "Use windows as floor",
         StackOnWindows = "Stack on windows",
+        WindowSideWalls = "Window side walls",
         FractureOnWordPiles = "Break on word piles",
         RandomWind = "Apply wind",
         SpawnMode = "Spawn mode",
@@ -158,6 +160,7 @@ public sealed record LocalizedText
         InteractionMode = "클릭 상호작용",
         WindowCollision = "창을 바닥으로 사용",
         StackOnWindows = "창 위에 쌓기",
+        WindowSideWalls = "창 양옆 벽",
         FractureOnWordPiles = "단어 더미 충돌 분리",
         RandomWind = "바람 적용",
         SpawnMode = "생성 위치",

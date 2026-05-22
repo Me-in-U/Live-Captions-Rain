@@ -6,7 +6,9 @@ public static class DesktopWindowPlatformResolver
         IReadOnlyList<DesktopWindowSnapshot> windowsFromFrontToBack,
         ScreenRect monitorBounds,
         double platformHeight,
-        double cornerSize)
+        double cornerSize,
+        double sideWallProbeWidth = 0,
+        double sideWallTopInset = 0)
     {
         var occludingWindows = windowsFromFrontToBack
             .Where(window => DesktopWindowFilter.ShouldOccludeWindow(window, monitorBounds))
@@ -24,10 +26,12 @@ public static class DesktopWindowPlatformResolver
 
         return VisibleTopEdgeResolver.Resolve(
                 occludingWindows
-                    .Select(item => new WindowSurface(item.Window.Handle, item.VisibleBounds))
-                    .ToArray(),
+                .Select(item => new WindowSurface(item.Window.Handle, item.VisibleBounds))
+                .ToArray(),
                 platformHeight,
-                cornerSize)
+                cornerSize,
+                sideWallProbeWidth,
+                sideWallTopInset)
             .Where(surface => platformHandles.Contains(surface.Handle))
             .ToArray();
     }

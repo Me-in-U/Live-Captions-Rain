@@ -14,6 +14,8 @@ public sealed record LiveCaptionsRainSettings
 
     public bool FractureOnWordPiles { get; init; } = true;
 
+    public bool WindowSideWalls { get; init; }
+
     public bool RandomWind { get; init; } = true;
 
     public bool UseAllMonitors { get; init; }

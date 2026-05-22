@@ -5,4 +5,6 @@ public sealed record VisibleWindowSurface(
     ScreenRect Bounds,
     IReadOnlyList<VisibleEdgeSegment> TopPlatforms,
     bool LeftCornerVisible,
-    bool RightCornerVisible);
+    bool RightCornerVisible,
+    IReadOnlyList<VisibleEdgeSegment> LeftSideSegments,
+    IReadOnlyList<VisibleEdgeSegment> RightSideSegments);

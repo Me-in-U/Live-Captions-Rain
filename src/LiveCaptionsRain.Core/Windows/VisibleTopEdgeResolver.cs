@@ -5,7 +5,9 @@ public static class VisibleTopEdgeResolver
     public static IReadOnlyList<VisibleWindowSurface> Resolve(
         IReadOnlyList<WindowSurface> windowsFromFrontToBack,
         double platformHeight,
-        double cornerSize)
+        double cornerSize,
+        double sideWallProbeWidth = 0,
+        double sideWallTopInset = 0)
     {
         var frontWindows = new List<ScreenRect>();
         var result = new List<VisibleWindowSurface>();
@@ -18,7 +20,9 @@ public static class VisibleTopEdgeResolver
                 window.Bounds,
                 visibleSegments,
                 IsCornerVisible(window.Bounds.Left, window.Bounds.Top, cornerSize, frontWindows),
-                IsCornerVisible(window.Bounds.Right, window.Bounds.Top, cornerSize, frontWindows)));
+                IsCornerVisible(window.Bounds.Right, window.Bounds.Top, cornerSize, frontWindows),
+                ResolveVisibleSideSegments(window.Bounds, frontWindows, sideWallProbeWidth, sideWallTopInset, isRightSide: false),
+                ResolveVisibleSideSegments(window.Bounds, frontWindows, sideWallProbeWidth, sideWallTopInset, isRightSide: true)));
 
             frontWindows.Add(window.Bounds);
         }
@@ -74,9 +78,57 @@ public static class VisibleTopEdgeResolver
             && occluder.Bottom > top);
     }
 
+    private static IReadOnlyList<VisibleEdgeSegment> ResolveVisibleSideSegments(
+        ScreenRect bounds,
+        IReadOnlyList<ScreenRect> occluders,
+        double sideWallProbeWidth,
+        double sideWallTopInset,
+        bool isRightSide)
+    {
+        if (sideWallProbeWidth <= 0 || bounds.Height <= sideWallTopInset)
+        {
+            return [];
+        }
+
+        var halfWidth = sideWallProbeWidth / 2d;
+        var sideLeft = (isRightSide ? bounds.Right : bounds.Left) - halfWidth;
+        var sideRight = sideLeft + sideWallProbeWidth;
+        var visibleTop = bounds.Top + Math.Max(0, sideWallTopInset);
+        var segments = new List<(double Top, double Bottom)> { (visibleTop, bounds.Bottom) };
+
+        foreach (var occluder in occluders)
+        {
+            if (!OverlapsHorizontal(occluder, sideLeft, sideRight))
+            {
+                continue;
+            }
+
+            var cutTop = Math.Max(visibleTop, occluder.Top);
+            var cutBottom = Math.Min(bounds.Bottom, occluder.Bottom);
+            if (cutBottom <= cutTop)
+            {
+                continue;
+            }
+
+            segments = segments
+                .SelectMany(segment => Subtract(segment.Top, segment.Bottom, cutTop, cutBottom))
+                .ToList();
+        }
+
+        return segments
+            .Where(segment => segment.Bottom - segment.Top >= 8)
+            .Select(segment => new VisibleEdgeSegment(sideLeft, segment.Top, sideWallProbeWidth, segment.Bottom - segment.Top))
+            .ToArray();
+    }
+
     private static bool OverlapsVertical(ScreenRect rect, double top, double bottom)
     {
         return rect.Top < bottom && rect.Bottom > top;
+    }
+
+    private static bool OverlapsHorizontal(ScreenRect rect, double left, double right)
+    {
+        return rect.Left < right && rect.Right > left;
     }
 
     private static IEnumerable<(double Left, double Right)> Subtract(
