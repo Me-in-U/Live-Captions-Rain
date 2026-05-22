@@ -45,6 +45,7 @@
                                 <CheckBox x:Name="ClickThroughCheck" Content="Click-through" />
                                 <CheckBox x:Name="InteractionModeCheck" Content="Interaction mode" />
                                 <CheckBox x:Name="StackOnWindowsCheck" Content="Stack on windows" />
+                                <CheckBox x:Name="FractureOnWordPilesCheck" Content="Break on word piles" />
                                 <CheckBox x:Name="RandomWindCheck" Content="Random wind" Checked="DemoWindSettings_Changed" Unchecked="DemoWindSettings_Changed" />
                             </WrapPanel>
                         </Border>

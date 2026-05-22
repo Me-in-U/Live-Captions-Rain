@@ -99,6 +99,7 @@ public partial class MainWindow : Window
             ClickThroughCheck.IsChecked = settings.ClickThrough;
             InteractionModeCheck.IsChecked = settings.InteractionMode;
             StackOnWindowsCheck.IsChecked = settings.StackOnWindows;
+            FractureOnWordPilesCheck.IsChecked = settings.FractureOnWordPiles;
             RandomWindCheck.IsChecked = settings.RandomWind;
             SpawnModeCombo.SelectedItem = FindOption(GetSpawnModeOptions(), settings.SpawnMode);
             WindStrengthBox.Text = settings.RandomWindStrength.ToString("0.##");
@@ -141,6 +142,7 @@ public partial class MainWindow : Window
             InteractionMode = InteractionModeCheck.IsChecked == true,
             WindowCollision = true,
             StackOnWindows = StackOnWindowsCheck.IsChecked == true,
+            FractureOnWordPiles = FractureOnWordPilesCheck.IsChecked == true,
             RandomWind = RandomWindCheck.IsChecked == true,
             SpawnMode = SpawnModeCombo.SelectedItem is LocalizedOption<SpawnMode> spawnMode ? spawnMode.Value : SpawnMode.Random,
             RandomWindStrength = ParseDouble(WindStrengthBox.Text, _settings.RandomWindStrength),
@@ -392,9 +394,11 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            var wordTopPlatforms = snapshots
-                .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
-                .Select(candidate => new PhysicsRect(candidate.Bounds.Left, candidate.Bounds.Top, candidate.Bounds.Width, 1));
+            IEnumerable<PhysicsRect> wordTopPlatforms = _settings.FractureOnWordPiles
+                ? snapshots
+                    .Where(candidate => candidate.Id != word.Id && !candidate.IsDeleting)
+                    .Select(candidate => candidate.Bounds)
+                : [];
 
             if (!HighFallImpactDetector.ShouldFracture(word, _demoWorld.Bounds.Height, platforms, wordTopPlatforms))
             {
@@ -635,6 +639,7 @@ public partial class MainWindow : Window
         menu.Items.Add(CheckItem(_text.ClickThrough, _settings.ClickThrough, value => UpdateSetting(_settings with { ClickThrough = value })));
         menu.Items.Add(CheckItem(_text.InteractionMode, _settings.InteractionMode, value => UpdateSetting(_settings with { InteractionMode = value })));
         menu.Items.Add(CheckItem(_text.StackOnWindows, _settings.StackOnWindows, value => UpdateSetting(_settings with { StackOnWindows = value })));
+        menu.Items.Add(CheckItem(_text.FractureOnWordPiles, _settings.FractureOnWordPiles, value => UpdateSetting(_settings with { FractureOnWordPiles = value })));
         menu.Items.Add(CheckItem(_text.RandomWind, _settings.RandomWind, value => UpdateSetting(_settings with { RandomWind = value })));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(_text.ClearWords, null, (_, _) => _overlayWindow?.ClearWords());
@@ -921,6 +926,7 @@ public partial class MainWindow : Window
         ClickThroughCheck.Content = _text.ClickThrough;
         InteractionModeCheck.Content = _text.InteractionMode;
         StackOnWindowsCheck.Content = _text.StackOnWindows;
+        FractureOnWordPilesCheck.Content = _text.FractureOnWordPiles;
         RandomWindCheck.Content = _text.RandomWind;
         SpawnModeLabelText.Text = _text.SpawnMode;
         WindStrengthLabelText.Text = _text.WindStrength;

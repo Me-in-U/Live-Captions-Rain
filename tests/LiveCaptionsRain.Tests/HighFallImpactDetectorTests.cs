@@ -39,6 +39,24 @@ public sealed class HighFallImpactDetectorTests
     }
 
     [Fact]
+    public void ShouldFracture_uses_other_word_bounds_even_after_deep_overlap()
+    {
+        var word = Word(fallDistancePixels: 330, bounds: new PhysicsRect(140, 370, 80, 80));
+        var stackedWord = new PhysicsRect(120, 398, 120, 50);
+
+        Assert.True(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, [], [stackedWord]));
+    }
+
+    [Fact]
+    public void ShouldFracture_ignores_other_words_when_fall_word_is_not_above_them()
+    {
+        var word = Word(fallDistancePixels: 330, bounds: new PhysicsRect(140, 430, 80, 80));
+        var stackedWord = new PhysicsRect(120, 398, 120, 50);
+
+        Assert.False(HighFallImpactDetector.ShouldFracture(word, screenHeight: 1000, [], [stackedWord]));
+    }
+
+    [Fact]
     public void ShouldFracture_ignores_disabled_fragment_words()
     {
         var word = Word(fallDistancePixels: 600, bounds: new PhysicsRect(100, 950, 120, 50), enabled: false);
