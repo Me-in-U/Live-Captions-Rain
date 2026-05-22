@@ -46,6 +46,7 @@ public partial class OverlayWindow : Window
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly Dictionary<Guid, OutlinedTextBlock> _wordElements = [];
     private readonly HashSet<Guid> _handledHighFallImpacts = [];
+    private readonly Dictionary<nint, IReadOnlyList<PhysicsRect>> _previousSideWallsByHandle = [];
 
     private LiveCaptionsRainSettings _settings;
     private MonitorInfo _monitor;
@@ -103,6 +104,7 @@ public partial class OverlayWindow : Window
         PositionOverTarget();
         _lastColliderRefresh = TimeSpan.MinValue;
         _windowPlatforms = [];
+        _previousSideWallsByHandle.Clear();
         ApplyClickThrough();
         UpdateOverlayActivity();
     }
@@ -439,7 +441,10 @@ public partial class OverlayWindow : Window
         _lastColliderRefresh = now;
         if (_settings.StackOnWindows)
         {
-            var state = _desktopWindowService.GetWindowCollisionState(_absoluteBounds, _handle);
+            var state = _desktopWindowService.GetWindowCollisionState(
+                _absoluteBounds,
+                _handle,
+                _settings.WindowSideWalls);
             _windowSnapshots = state.Snapshots;
             ApplyWindowColliders(state.Colliders, StableWindowPlatformTolerancePixels);
             return;
@@ -462,7 +467,10 @@ public partial class OverlayWindow : Window
         }
 
         _windowSnapshots = DesktopWindowDragOrderResolver.ApplyDraggedForeground(_windowSnapshots, draggedWindow);
-        var nextColliders = _desktopWindowService.ResolveWindowColliders(_windowSnapshots, _absoluteBounds);
+        var nextColliders = _desktopWindowService.ResolveWindowColliders(
+            _windowSnapshots,
+            _absoluteBounds,
+            _settings.WindowSideWalls);
         ApplyWindowColliders(nextColliders, DragWindowPlatformTolerancePixels);
         return true;
     }
@@ -511,7 +519,7 @@ public partial class OverlayWindow : Window
 
     private void ApplyWindowColliders(IReadOnlyList<WindowColliderSnapshot> nextColliders, double tolerance)
     {
-        var nextPlatforms = nextColliders.SelectMany(item => item.TopPlatforms).ToArray();
+        var nextPlatforms = BuildCollisionPlatforms(nextColliders);
         _colliders = nextColliders;
         if (PhysicsRectSetComparer.AreEquivalent(_windowPlatforms, nextPlatforms, tolerance))
         {
@@ -520,6 +528,52 @@ public partial class OverlayWindow : Window
 
         _windowPlatforms = nextPlatforms;
         _world?.SetWindowPlatforms(nextPlatforms);
+    }
+
+    private PhysicsRect[] BuildCollisionPlatforms(IReadOnlyList<WindowColliderSnapshot> nextColliders)
+    {
+        var platforms = new List<PhysicsRect>();
+        var nextSideWallsByHandle = new Dictionary<nint, IReadOnlyList<PhysicsRect>>();
+
+        foreach (var collider in nextColliders)
+        {
+            platforms.AddRange(collider.TopCollisionPlatforms);
+            if (collider.SideWalls.Count == 0)
+            {
+                continue;
+            }
+
+            nextSideWallsByHandle[collider.Handle] = collider.SideWalls;
+            if (_previousSideWallsByHandle.TryGetValue(collider.Handle, out var previousSideWalls)
+                && previousSideWalls.Count == collider.SideWalls.Count)
+            {
+                for (var index = 0; index < collider.SideWalls.Count; index++)
+                {
+                    platforms.Add(Union(previousSideWalls[index], collider.SideWalls[index]));
+                }
+
+                continue;
+            }
+
+            platforms.AddRange(collider.SideWalls);
+        }
+
+        _previousSideWallsByHandle.Clear();
+        foreach (var item in nextSideWallsByHandle)
+        {
+            _previousSideWallsByHandle[item.Key] = item.Value;
+        }
+
+        return platforms.ToArray();
+    }
+
+    private static PhysicsRect Union(PhysicsRect first, PhysicsRect second)
+    {
+        var left = Math.Min(first.Left, second.Left);
+        var top = Math.Min(first.Top, second.Top);
+        var right = Math.Max(first.Right, second.Right);
+        var bottom = Math.Max(first.Bottom, second.Bottom);
+        return new PhysicsRect(left, top, right - left, bottom - top);
     }
 
     private static bool IsLeftMouseButtonPressed()

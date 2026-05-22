@@ -99,6 +99,7 @@ public partial class MainWindow : Window
             ClickThroughCheck.IsChecked = settings.ClickThrough;
             InteractionModeCheck.IsChecked = settings.InteractionMode;
             StackOnWindowsCheck.IsChecked = settings.StackOnWindows;
+            WindowSideWallsCheck.IsChecked = settings.WindowSideWalls;
             FractureOnWordPilesCheck.IsChecked = settings.FractureOnWordPiles;
             RandomWindCheck.IsChecked = settings.RandomWind;
             SpawnModeCombo.SelectedItem = FindOption(GetSpawnModeOptions(), settings.SpawnMode);
@@ -142,6 +143,7 @@ public partial class MainWindow : Window
             InteractionMode = InteractionModeCheck.IsChecked == true,
             WindowCollision = true,
             StackOnWindows = StackOnWindowsCheck.IsChecked == true,
+            WindowSideWalls = WindowSideWallsCheck.IsChecked == true,
             FractureOnWordPiles = FractureOnWordPilesCheck.IsChecked == true,
             RandomWind = RandomWindCheck.IsChecked == true,
             SpawnMode = SpawnModeCombo.SelectedItem is LocalizedOption<SpawnMode> spawnMode ? spawnMode.Value : SpawnMode.Random,
@@ -275,6 +277,11 @@ public partial class MainWindow : Window
     private void DemoWindSettings_Changed(object sender, RoutedEventArgs e)
     {
         ApplyDemoControlChanges(resetScene: false);
+    }
+
+    private void DemoPlatformSettings_Changed(object sender, RoutedEventArgs e)
+    {
+        ApplyDemoControlChanges(resetScene: true);
     }
 
     private void ApplyDemoControlChanges(bool resetScene)
@@ -550,7 +557,7 @@ public partial class MainWindow : Window
         }
 
         _demoWorld.SetWindowPlatforms(_settings.StackOnWindows
-            ? [GetDemoWindowTopPlatform()]
+            ? GetDemoWindowCollisionPlatforms()
             : []);
     }
 
@@ -567,6 +574,27 @@ public partial class MainWindow : Window
     {
         var rect = GetDemoWindowRect();
         return new PhysicsRect(rect.Left, rect.Top - 2, rect.Width, 4);
+    }
+
+    private IReadOnlyList<PhysicsRect> GetDemoWindowCollisionPlatforms()
+    {
+        var top = GetDemoWindowTopPlatform();
+        if (!_settings.WindowSideWalls)
+        {
+            return [new PhysicsRect(top.Left, top.Top, top.Width, 36)];
+        }
+
+        var rect = GetDemoWindowRect();
+        const double topThickness = 36d;
+        const double sideThickness = 384d;
+        var sideTop = rect.Top + topThickness;
+        var sideHeight = Math.Max(1, rect.Height - topThickness);
+        return
+        [
+            new PhysicsRect(top.Left, top.Top, top.Width, topThickness),
+            new PhysicsRect(rect.Left - sideThickness / 2d, sideTop, sideThickness, sideHeight),
+            new PhysicsRect(rect.Right - sideThickness / 2d, sideTop, sideThickness, sideHeight)
+        ];
     }
 
     private void ApplyDemoWordStyle(OutlinedTextBlock element, LiveCaptionsRainSettings settings)
@@ -639,6 +667,7 @@ public partial class MainWindow : Window
         menu.Items.Add(CheckItem(_text.ClickThrough, _settings.ClickThrough, value => UpdateSetting(_settings with { ClickThrough = value })));
         menu.Items.Add(CheckItem(_text.InteractionMode, _settings.InteractionMode, value => UpdateSetting(_settings with { InteractionMode = value })));
         menu.Items.Add(CheckItem(_text.StackOnWindows, _settings.StackOnWindows, value => UpdateSetting(_settings with { StackOnWindows = value })));
+        menu.Items.Add(CheckItem(_text.WindowSideWalls, _settings.WindowSideWalls, value => UpdateSetting(_settings with { WindowSideWalls = value })));
         menu.Items.Add(CheckItem(_text.FractureOnWordPiles, _settings.FractureOnWordPiles, value => UpdateSetting(_settings with { FractureOnWordPiles = value })));
         menu.Items.Add(CheckItem(_text.RandomWind, _settings.RandomWind, value => UpdateSetting(_settings with { RandomWind = value })));
         menu.Items.Add(new Forms.ToolStripSeparator());
@@ -926,6 +955,7 @@ public partial class MainWindow : Window
         ClickThroughCheck.Content = _text.ClickThrough;
         InteractionModeCheck.Content = _text.InteractionMode;
         StackOnWindowsCheck.Content = _text.StackOnWindows;
+        WindowSideWallsCheck.Content = _text.WindowSideWalls;
         FractureOnWordPilesCheck.Content = _text.FractureOnWordPiles;
         RandomWindCheck.Content = _text.RandomWind;
         SpawnModeLabelText.Text = _text.SpawnMode;

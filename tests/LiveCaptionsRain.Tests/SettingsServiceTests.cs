@@ -16,6 +16,7 @@ public sealed class SettingsServiceTests
         Assert.False(settings.InteractionMode);
         Assert.True(settings.StackOnWindows);
         Assert.True(settings.FractureOnWordPiles);
+        Assert.False(settings.WindowSideWalls);
         Assert.Equal(SpawnMode.Random, settings.SpawnMode);
         Assert.Equal(180, settings.RandomWindStrength);
         Assert.Equal(22, settings.FontSize);
@@ -53,6 +54,7 @@ public sealed class SettingsServiceTests
             SpawnMode = SpawnMode.LeftToRight,
             StackOnWindows = false,
             FractureOnWordPiles = false,
+            WindowSideWalls = true,
             CaptionDelayMilliseconds = 1200,
             CleanupLifetimeSeconds = 12,
             MaxActiveWords = 42
@@ -66,6 +68,7 @@ public sealed class SettingsServiceTests
         Assert.Equal(settings.SpawnMode, loaded.SpawnMode);
         Assert.Equal(settings.StackOnWindows, loaded.StackOnWindows);
         Assert.Equal(settings.FractureOnWordPiles, loaded.FractureOnWordPiles);
+        Assert.Equal(settings.WindowSideWalls, loaded.WindowSideWalls);
         Assert.Equal(settings.CaptionDelayMilliseconds, loaded.CaptionDelayMilliseconds);
         Assert.Equal(settings.CleanupLifetimeSeconds, loaded.CleanupLifetimeSeconds);
         Assert.Equal(settings.MaxActiveWords, loaded.MaxActiveWords);

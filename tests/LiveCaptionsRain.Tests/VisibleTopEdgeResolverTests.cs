@@ -48,4 +48,22 @@ public sealed class VisibleTopEdgeResolverTests
         Assert.True(frontSurface.LeftCornerVisible);
         Assert.True(frontSurface.RightCornerVisible);
     }
+
+    [Fact]
+    public void Resolve_keeps_only_visible_side_edge_segments_for_windows_behind_front_windows()
+    {
+        var front = WindowSurface.Create(handle: 1, left: 70, top: 100, right: 280, bottom: 260);
+        var back = WindowSurface.Create(handle: 2, left: 100, top: 80, right: 500, bottom: 400);
+
+        var surfaces = VisibleTopEdgeResolver.Resolve(
+            [front, back],
+            platformHeight: 18,
+            cornerSize: 48,
+            sideWallProbeWidth: 384,
+            sideWallTopInset: 36);
+
+        var backSurface = surfaces.Single(surface => surface.Handle == 2);
+        Assert.Equal([new VisibleEdgeSegment(-92, 260, 384, 140)], backSurface.LeftSideSegments);
+        Assert.Equal([new VisibleEdgeSegment(308, 116, 384, 284)], backSurface.RightSideSegments);
+    }
 }
