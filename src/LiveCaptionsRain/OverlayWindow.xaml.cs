@@ -28,6 +28,11 @@ public partial class OverlayWindow : Window
     private static readonly TimeSpan CaptionSettleMinimum = TimeSpan.FromMilliseconds(900);
     private static readonly TimeSpan CaptionSettleMaximum = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OverflowFadeDuration = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan StableWindowColliderRefreshInterval = TimeSpan.FromMilliseconds(260);
+    private static readonly TimeSpan DragWindowColliderRefreshInterval = TimeSpan.FromMilliseconds(130);
+    private const double StableWindowPlatformTolerancePixels = 2d;
+    private const double DragWindowPlatformTolerancePixels = 0.25d;
+    private const double WordVisualOffsetYPixels = 8d;
 
     private readonly LiveCaptionsService _liveCaptions;
     private readonly MonitorService _monitorService;
@@ -46,7 +51,9 @@ public partial class OverlayWindow : Window
     private MonitorInfo _monitor;
     private WordPhysicsWorld? _world;
     private ScreenRect _absoluteBounds;
+    private IReadOnlyList<DesktopWindowSnapshot> _windowSnapshots = [];
     private IReadOnlyList<WindowColliderSnapshot> _colliders = [];
+    private IReadOnlyList<PhysicsRect> _windowPlatforms = [];
     private TimeSpan _lastFrame = TimeSpan.Zero;
     private TimeSpan _lastColliderRefresh = TimeSpan.Zero;
     private TimeSpan _captionSettleMinimumUntil = TimeSpan.Zero;
@@ -55,6 +62,7 @@ public partial class OverlayWindow : Window
     private int _stableSettleTicks;
     private int _lastReportedWordCount = -1;
     private nint _handle;
+    private nint _dragWindowHandle;
     private bool _isInitialized;
     private bool _isRenderingAttached;
     private TimeSpan _lastSpawnPump = TimeSpan.Zero;
@@ -94,6 +102,7 @@ public partial class OverlayWindow : Window
         _captionPipeline.SetStabilizationDelay(TimeSpan.FromMilliseconds(_settings.CaptionDelayMilliseconds));
         PositionOverTarget();
         _lastColliderRefresh = TimeSpan.MinValue;
+        _windowPlatforms = [];
         ApplyClickThrough();
         UpdateOverlayActivity();
     }
@@ -173,6 +182,9 @@ public partial class OverlayWindow : Window
         }
 
         _windField.Reset();
+        _windowPlatforms = [];
+        _windowSnapshots = [];
+        _dragWindowHandle = nint.Zero;
     }
 
     private void EnsureOverlayActive()
@@ -404,16 +416,115 @@ public partial class OverlayWindow : Window
 
     private void RefreshWindowColliders(TimeSpan now)
     {
-        if (_world is null || !FrameCadence.ShouldRun(now, _lastColliderRefresh, TimeSpan.FromMilliseconds(260)))
+        var isDraggingWindow = IsLeftMouseButtonPressed();
+        if (_world is null)
+        {
+            return;
+        }
+
+        if (isDraggingWindow && TryRefreshDraggedWindowCollider())
+        {
+            return;
+        }
+
+        _dragWindowHandle = nint.Zero;
+        var refreshInterval = isDraggingWindow
+            ? DragWindowColliderRefreshInterval
+            : StableWindowColliderRefreshInterval;
+        if (!FrameCadence.ShouldRun(now, _lastColliderRefresh, refreshInterval))
         {
             return;
         }
 
         _lastColliderRefresh = now;
-        _colliders = _settings.StackOnWindows
-            ? _desktopWindowService.GetWindowColliders(_absoluteBounds, _handle)
-            : [];
-        _world.SetWindowPlatforms(_colliders.SelectMany(item => item.TopPlatforms));
+        if (_settings.StackOnWindows)
+        {
+            var state = _desktopWindowService.GetWindowCollisionState(_absoluteBounds, _handle);
+            _windowSnapshots = state.Snapshots;
+            ApplyWindowColliders(state.Colliders, StableWindowPlatformTolerancePixels);
+            return;
+        }
+
+        _windowSnapshots = [];
+        ApplyWindowColliders([], StableWindowPlatformTolerancePixels);
+    }
+
+    private bool TryRefreshDraggedWindowCollider()
+    {
+        if (!_settings.StackOnWindows)
+        {
+            return false;
+        }
+
+        if (_windowSnapshots.Count == 0 || !TryResolveDraggedWindowSnapshot(out var draggedWindow))
+        {
+            return false;
+        }
+
+        _windowSnapshots = DesktopWindowDragOrderResolver.ApplyDraggedForeground(_windowSnapshots, draggedWindow);
+        var nextColliders = _desktopWindowService.ResolveWindowColliders(_windowSnapshots, _absoluteBounds);
+        ApplyWindowColliders(nextColliders, DragWindowPlatformTolerancePixels);
+        return true;
+    }
+
+    private bool TryResolveDraggedWindowSnapshot(out DesktopWindowSnapshot snapshot)
+    {
+        snapshot = default!;
+        foreach (var handle in GetDraggedWindowCandidates())
+        {
+            if (handle == nint.Zero)
+            {
+                continue;
+            }
+
+            var root = WindowsApi.GetAncestor(handle, WindowsApi.GaRoot);
+            if (root == nint.Zero)
+            {
+                root = handle;
+            }
+
+            if (_desktopWindowService.TryGetWindowSnapshot(_absoluteBounds, _handle, root, out snapshot))
+            {
+                _dragWindowHandle = root;
+                return true;
+            }
+        }
+
+        _dragWindowHandle = nint.Zero;
+        return false;
+    }
+
+    private IEnumerable<nint> GetDraggedWindowCandidates()
+    {
+        if (_dragWindowHandle != nint.Zero)
+        {
+            yield return _dragWindowHandle;
+        }
+
+        if (WindowsApi.GetCursorPos(out var point))
+        {
+            yield return WindowsApi.WindowFromPoint(point);
+        }
+
+        yield return WindowsApi.GetForegroundWindow();
+    }
+
+    private void ApplyWindowColliders(IReadOnlyList<WindowColliderSnapshot> nextColliders, double tolerance)
+    {
+        var nextPlatforms = nextColliders.SelectMany(item => item.TopPlatforms).ToArray();
+        _colliders = nextColliders;
+        if (PhysicsRectSetComparer.AreEquivalent(_windowPlatforms, nextPlatforms, tolerance))
+        {
+            return;
+        }
+
+        _windowPlatforms = nextPlatforms;
+        _world?.SetWindowPlatforms(nextPlatforms);
+    }
+
+    private static bool IsLeftMouseButtonPressed()
+    {
+        return (WindowsApi.GetAsyncKeyState(WindowsApi.VkLButton) & unchecked((short)0x8000)) != 0;
     }
 
     private void FractureHighFallImpacts()
@@ -548,6 +659,7 @@ public partial class OverlayWindow : Window
                 element.Fill = fill ?? BrushFromHex(_settings.FontColor);
                 element.Stroke = stroke ?? BrushFromHex(_settings.OutlineColor);
                 element.StrokeThickness = _settings.StrokeThickness;
+                element.VisualOffsetY = WordVisualOffsetYPixels;
                 element.UseFill = _settings.UseFill;
                 element.Shadow = _settings.Shadow;
             }

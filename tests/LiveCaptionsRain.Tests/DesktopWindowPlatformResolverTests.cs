@@ -51,6 +51,34 @@ public sealed class DesktopWindowPlatformResolverTests
         Assert.Empty(platforms);
     }
 
+    [Fact]
+    public void ApplyDraggedForeground_recomputes_back_window_visibility_with_dragged_window_on_top()
+    {
+        var front = Window(
+            handle: 1,
+            left: 900,
+            top: 120,
+            right: 1400,
+            bottom: 680);
+        var back = Window(
+            handle: 2,
+            left: 300,
+            top: 180,
+            right: 900,
+            bottom: 720);
+        var dragged = front with { Bounds = new ScreenRect(260, 150, 940, 680) };
+
+        var reordered = DesktopWindowDragOrderResolver.ApplyDraggedForeground([back, front], dragged);
+        var platforms = DesktopWindowPlatformResolver.Resolve(
+            reordered,
+            Monitor,
+            platformHeight: 18,
+            cornerSize: 48);
+
+        Assert.Equal(dragged.Handle, reordered[0].Handle);
+        Assert.Empty(platforms.Single(platform => platform.Handle == back.Handle).TopPlatforms);
+    }
+
     private static DesktopWindowSnapshot Window(
         nint handle,
         double left,
