@@ -9,6 +9,123 @@ Live Captions Rain is a Windows-only .NET 8 WPF app. Keep the app focused on Win
 - Preserve local-only behavior. Caption text and settings should not be sent to remote services.
 - Keep Windows 11 as the supported target unless the project scope changes.
 
+## Versioning
+
+Use `Major.Minor.Patch`.
+
+- `Major`: platform-wide changes, architecture-wide rewrites, breaking changes, or very large feature sets.
+- `Minor`: one feature release. It may contain multiple accepted user-facing features.
+- `Patch`: already-released version hotfix. It may contain one or more tightly related bug, security, packaging, or runtime fixes, but no new user-facing feature.
+
+Version bumps must match the release scope.
+
+- Do not use a patch release for new functionality.
+- If a release contains new user-facing functionality, use the next minor version.
+- If a release is only a hotfix for an already published release, use the next patch version.
+- If release scope grows beyond the chosen version meaning, either move the extra work back to normal development or choose a correctly named version.
+
+Keep release version surfaces in sync when they exist:
+
+- Project/package version metadata in `.csproj` or shared build props.
+- Git tag and GitHub release name.
+- Release artifact name.
+- Release notes.
+
+## Changelog And Release Notes Rules
+
+Release notes are required for every final release and release candidate.
+
+- Record user-visible features, bug fixes, packaging changes, dependency/runtime changes, and known limitations.
+- Keep release notes consistent with the version bump type.
+- Do not mix unrelated feature summaries into a patch release note.
+- Mention manual validation gaps explicitly.
+- If `CHANGELOG.md` or versioned changelog files are introduced, update them in the same commit as the code or release change they describe.
+
+Release notes should include:
+
+- Version number.
+- Short summary.
+- Added, changed, fixed, and packaging/runtime sections when applicable.
+- Validation commands and manual checks.
+- Release artifact path or release asset name.
+
+## Branch Model
+
+`main` is the release branch. Use it only for final release integration.
+
+Feature and normal fix work should happen off `main`, then return through a reviewed and verified integration flow. If a `develop` branch is introduced, use it as the ongoing integration branch for the next release.
+
+Branch names:
+
+- Feature branch format: `feature/<short-name>`.
+- Bug fix branch format: `fix/<short-name>`.
+- Release stabilization branch format: `v<major>.<minor>.<patch>-beta`.
+- Emergency production hotfix format: `hotfix/v<major>.<minor>.<patch>-<short-name>`.
+
+Do not use personal, tool, or automation prefixes in branch names. In particular, do not create branches with prefixes such as `codex/`.
+
+Release flow when a `develop` branch exists:
+
+1. Keep `main` at the latest stable release.
+2. Keep `develop` as the shared integration branch for the next release.
+3. Branch feature/fix work from `develop`.
+4. Merge completed feature/fix branches back into `develop` after review and verification.
+5. When `develop` is stable enough for release preparation, cut `v<major>.<minor>.<patch>-beta` from `develop`.
+6. On beta, allow only stabilization work: bug fixes, docs, packaging, dependency lock fixes, release notes, and verification changes.
+7. When beta is final-stable, promote the release to `main`.
+8. After `main` receives the release, tag it as `v<major>.<minor>.<patch>` and publish the release artifact.
+9. Sync the released `main` state back into `develop` if `develop` exists.
+
+Do not add new feature scope directly to beta. New feature work after beta cut goes to the next development branch.
+
+Branch cleanup rules:
+
+- Never delete `main` or `develop`.
+- Delete completed feature/fix branches after they are merged.
+- Delete obsolete beta branches after the release is promoted to `main`, unless the user explicitly wants to keep them.
+- Run `git fetch --prune origin` after remote branch deletion.
+- Verify remaining branches with `git branch --all --verbose` and `git ls-remote --heads origin`.
+
+## Main And Release Rules
+
+`main` should stay clean, linear, and release-oriented.
+
+- Do not commit experimental work directly to `main`.
+- Do not use `main` as a feature integration branch.
+- Do not merge planning-only branches into `main`.
+- Do not leave merge commits that only expose temporary branch names.
+- Prefer rebase, squash, or fast-forward history when it keeps history clearer.
+- Only force-push `main` when explicitly requested and after verifying the target commit.
+
+Before promoting a release to `main`, verify:
+
+- .NET app tests pass.
+- The app version or release name is correct.
+- The app publishes successfully when packaging or release output changes.
+- The published app launches or the release artifact is smoke-checked.
+- Release notes describe the user-visible changes and validation.
+
+## History Rewrite Rules
+
+Treat public history rewrites as release operations.
+
+- Rewrite `main` only when the user explicitly requests it.
+- Use `--force-with-lease`, not plain force push.
+- Capture the expected remote commit before force pushing.
+- Verify local and remote branch pointers after the rewrite.
+- Search rewritten history for unwanted branch names, tool prefixes, raw hashes, and obsolete merge commits.
+- Do not leave merge commits that expose temporary branches in release history.
+- Do not include planning-only commits in release history.
+
+Before and after a history rewrite, check:
+
+```powershell
+git status --short --branch
+git log --oneline --decorate --max-count=20
+git rev-parse main origin/main
+git branch --all --verbose
+```
+
 ## Branch And Commit Rules
 
 Keep each change scoped to one coherent task.
