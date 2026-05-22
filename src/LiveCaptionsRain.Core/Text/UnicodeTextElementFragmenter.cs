@@ -18,11 +18,6 @@ public static class UnicodeTextElementFragmenter
         }
 
         var normalized = element.Normalize(NormalizationForm.FormD);
-        if (string.Equals(normalized, element, StringComparison.Ordinal))
-        {
-            return [element];
-        }
-
         var codePoints = normalized.EnumerateRunes().ToArray();
         if (codePoints.Length <= 1 || !IsSupportedStarter(codePoints[0]))
         {

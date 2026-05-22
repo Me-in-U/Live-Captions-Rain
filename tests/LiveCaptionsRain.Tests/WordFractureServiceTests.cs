@@ -65,4 +65,10 @@ public sealed class WordFractureServiceTests
         Assert.Equal(["a", "˘", "´"], WordFractureService.FractureRandomSegments("ắ", new Random(5)));
         Assert.Equal(["か", "゛"], WordFractureService.FractureRandomSegments("が", new Random(5)));
     }
+
+    [Fact]
+    public void FractureRandomSegments_decomposes_already_normalized_mark_sequences()
+    {
+        Assert.Equal(["a", "˘", "´"], WordFractureService.FractureRandomSegments("a\u0306\u0301", new Random(5)));
+    }
 }
