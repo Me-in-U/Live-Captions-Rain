@@ -82,6 +82,9 @@ internal sealed class DesktopWindowService
             return false;
         }
 
+        var bounds = WindowsApi.TryGetExtendedFrameBounds(hWnd, out var visibleRect)
+            ? visibleRect
+            : rect;
         var exStyle = WindowsApi.GetWindowLong(hWnd, WindowsApi.GwlExStyle);
         var title = WindowsApi.GetTitle(hWnd);
         var rootOwner = WindowsApi.GetAncestor(hWnd, WindowsApi.GaRootOwner);
@@ -90,7 +93,7 @@ internal sealed class DesktopWindowService
         snapshot = new DesktopWindowSnapshot(
             hWnd,
             title,
-            new ScreenRect(rect.Left, rect.Top, rect.Right, rect.Bottom),
+            new ScreenRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom),
             WindowsApi.IsWindowVisible(hWnd) && !isCloaked && !string.IsNullOrWhiteSpace(title),
             WindowsApi.IsIconic(hWnd),
             (exStyle & WindowsApi.WsExToolWindow) != 0,

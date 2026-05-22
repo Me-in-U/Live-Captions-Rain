@@ -13,7 +13,7 @@ public sealed class WordPhysicsWorld : IDisposable
 {
     private const float PixelsPerMeter = 100f;
     private const float BoundaryThicknessPixels = 120f;
-    private const float PlatformThicknessPixels = 18f;
+    private const float PlatformThicknessPixels = 36f;
 
     private readonly B2WorldId _worldId;
     private readonly List<PhysicsWordBody> _words = [];

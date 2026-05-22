@@ -11,7 +11,9 @@ internal static class WindowsApi
     public const int WsExToolWindow = 0x00000080;
     public const int SwMinimize = 6;
     public const int SwRestore = 9;
+    public const int VkLButton = 0x01;
     public const uint GaRootOwner = 3;
+    private const int DwmwaExtendedFrameBounds = 9;
     private const int DwmwaCloaked = 14;
 
     [DllImport("user32.dll")]
@@ -56,8 +58,14 @@ internal static class WindowsApi
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(nint hWnd, out int processId);
 
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int virtualKey);
+
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(nint hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    [DllImport("dwmapi.dll", EntryPoint = "DwmGetWindowAttribute")]
+    private static extern int DwmGetWindowRectAttribute(nint hwnd, int dwAttribute, out WinRect pvAttribute, int cbAttribute);
 
     [DllImport("user32.dll", EntryPoint = "GetWindowTextLengthW", CharSet = CharSet.Unicode)]
     public static extern int GetWindowTextLength(nint hWnd);
@@ -82,6 +90,13 @@ internal static class WindowsApi
     {
         return DwmGetWindowAttribute(hWnd, DwmwaCloaked, out var cloaked, sizeof(int)) == 0
             && cloaked != 0;
+    }
+
+    public static bool TryGetExtendedFrameBounds(nint hWnd, out WinRect rect)
+    {
+        return DwmGetWindowRectAttribute(hWnd, DwmwaExtendedFrameBounds, out rect, Marshal.SizeOf<WinRect>()) == 0
+            && rect.Right > rect.Left
+            && rect.Bottom > rect.Top;
     }
 }
 

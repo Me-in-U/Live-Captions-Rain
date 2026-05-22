@@ -21,6 +21,8 @@ internal sealed class OutlinedTextBlock : FrameworkElement
 
     public double StrokeThickness { get; set; } = 1.5;
 
+    public double VisualOffsetY { get; set; }
+
     public bool UseFill { get; set; } = true;
 
     public bool Shadow { get; set; } = true;
@@ -39,7 +41,7 @@ internal sealed class OutlinedTextBlock : FrameworkElement
             Brushes.White,
             dpi);
 
-        var geometry = formatted.BuildGeometry(new Point(StrokeThickness + 4, StrokeThickness + 4));
+        var geometry = formatted.BuildGeometry(new Point(StrokeThickness + 4, StrokeThickness + 4 + VisualOffsetY));
         if (Shadow)
         {
             drawingContext.PushOpacity(0.36);
