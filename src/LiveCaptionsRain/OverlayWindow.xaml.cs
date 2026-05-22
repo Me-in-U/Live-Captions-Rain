@@ -51,6 +51,7 @@ public partial class OverlayWindow : Window
     private MonitorInfo _monitor;
     private WordPhysicsWorld? _world;
     private ScreenRect _absoluteBounds;
+    private IReadOnlyList<DesktopWindowSnapshot> _windowSnapshots = [];
     private IReadOnlyList<WindowColliderSnapshot> _colliders = [];
     private IReadOnlyList<PhysicsRect> _windowPlatforms = [];
     private TimeSpan _lastFrame = TimeSpan.Zero;
@@ -182,6 +183,7 @@ public partial class OverlayWindow : Window
 
         _windField.Reset();
         _windowPlatforms = [];
+        _windowSnapshots = [];
         _dragWindowHandle = nint.Zero;
     }
 
@@ -435,10 +437,16 @@ public partial class OverlayWindow : Window
         }
 
         _lastColliderRefresh = now;
-        var nextColliders = _settings.StackOnWindows
-            ? _desktopWindowService.GetWindowColliders(_absoluteBounds, _handle)
-            : [];
-        ApplyWindowColliders(nextColliders, StableWindowPlatformTolerancePixels);
+        if (_settings.StackOnWindows)
+        {
+            var state = _desktopWindowService.GetWindowCollisionState(_absoluteBounds, _handle);
+            _windowSnapshots = state.Snapshots;
+            ApplyWindowColliders(state.Colliders, StableWindowPlatformTolerancePixels);
+            return;
+        }
+
+        _windowSnapshots = [];
+        ApplyWindowColliders([], StableWindowPlatformTolerancePixels);
     }
 
     private bool TryRefreshDraggedWindowCollider()
@@ -448,22 +456,20 @@ public partial class OverlayWindow : Window
             return false;
         }
 
-        if (!TryResolveDraggedWindowCollider(out var draggedCollider))
+        if (_windowSnapshots.Count == 0 || !TryResolveDraggedWindowSnapshot(out var draggedWindow))
         {
             return false;
         }
 
-        var nextColliders = _colliders
-            .Where(collider => collider.Handle != draggedCollider.Handle)
-            .Append(draggedCollider)
-            .ToArray();
+        _windowSnapshots = DesktopWindowDragOrderResolver.ApplyDraggedForeground(_windowSnapshots, draggedWindow);
+        var nextColliders = _desktopWindowService.ResolveWindowColliders(_windowSnapshots, _absoluteBounds);
         ApplyWindowColliders(nextColliders, DragWindowPlatformTolerancePixels);
         return true;
     }
 
-    private bool TryResolveDraggedWindowCollider(out WindowColliderSnapshot collider)
+    private bool TryResolveDraggedWindowSnapshot(out DesktopWindowSnapshot snapshot)
     {
-        collider = default!;
+        snapshot = default!;
         foreach (var handle in GetDraggedWindowCandidates())
         {
             if (handle == nint.Zero)
@@ -477,7 +483,7 @@ public partial class OverlayWindow : Window
                 root = handle;
             }
 
-            if (_desktopWindowService.TryGetWindowCollider(_absoluteBounds, _handle, root, out collider))
+            if (_desktopWindowService.TryGetWindowSnapshot(_absoluteBounds, _handle, root, out snapshot))
             {
                 _dragWindowHandle = root;
                 return true;

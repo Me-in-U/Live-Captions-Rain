@@ -115,6 +115,7 @@ public sealed class WordPhysicsWorld : IDisposable
                     b2Rot_identity);
             }
 
+            WakeWords();
             return;
         }
 
@@ -130,6 +131,8 @@ public sealed class WordPhysicsWorld : IDisposable
                 "window-top");
             _platformBodies.Add(new PlatformBody(bodyId, platform.Width));
         }
+
+        WakeWords();
     }
 
     public void Step(double deltaSeconds, double randomWindPixelsPerSecond)
@@ -327,6 +330,14 @@ public sealed class WordPhysicsWorld : IDisposable
         }
 
         _platformBodies.Clear();
+    }
+
+    private void WakeWords()
+    {
+        foreach (var word in _words)
+        {
+            b2Body_SetAwake(word.BodyId, true);
+        }
     }
 
     private void ThrowIfDisposed()

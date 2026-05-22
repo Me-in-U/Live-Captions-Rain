@@ -13,7 +13,7 @@ internal sealed class DesktopWindowService
     private const int PlatformHeight = 18;
     private readonly int _currentProcessId = Environment.ProcessId;
 
-    public IReadOnlyList<WindowColliderSnapshot> GetWindowColliders(ScreenRect monitorBounds, nint overlayHandle)
+    public WindowCollisionState GetWindowCollisionState(ScreenRect monitorBounds, nint overlayHandle)
     {
         var snapshots = new List<DesktopWindowSnapshot>();
 
@@ -39,6 +39,21 @@ internal sealed class DesktopWindowService
             return true;
         }, nint.Zero);
 
+        var snapshotArray = snapshots.ToArray();
+        return new WindowCollisionState(
+            snapshotArray,
+            ResolveWindowColliders(snapshotArray, monitorBounds));
+    }
+
+    public IReadOnlyList<WindowColliderSnapshot> GetWindowColliders(ScreenRect monitorBounds, nint overlayHandle)
+    {
+        return GetWindowCollisionState(monitorBounds, overlayHandle).Colliders;
+    }
+
+    public IReadOnlyList<WindowColliderSnapshot> ResolveWindowColliders(
+        IReadOnlyList<DesktopWindowSnapshot> snapshots,
+        ScreenRect monitorBounds)
+    {
         var visibleSurfaces = DesktopWindowPlatformResolver.Resolve(
             snapshots,
             monitorBounds,
@@ -52,21 +67,28 @@ internal sealed class DesktopWindowService
             .ToArray();
     }
 
-    public bool TryGetWindowCollider(ScreenRect monitorBounds, nint overlayHandle, nint hWnd, out WindowColliderSnapshot collider)
+    public bool TryGetWindowSnapshot(ScreenRect monitorBounds, nint overlayHandle, nint hWnd, out DesktopWindowSnapshot snapshot)
     {
-        collider = default!;
+        snapshot = default!;
         if (hWnd == overlayHandle || hWnd == nint.Zero)
         {
             return false;
         }
 
         WindowsApi.GetWindowThreadProcessId(hWnd, out var processId);
-        if (processId == _currentProcessId || !TryCreateSnapshot(hWnd, out var snapshot))
+        if (processId == _currentProcessId || !TryCreateSnapshot(hWnd, out snapshot))
         {
             return false;
         }
 
-        if (!DesktopWindowFilter.ShouldUseWindow(snapshot, monitorBounds))
+        return DesktopWindowFilter.ShouldOccludeWindow(snapshot, monitorBounds);
+    }
+
+    public bool TryGetWindowCollider(ScreenRect monitorBounds, nint overlayHandle, nint hWnd, out WindowColliderSnapshot collider)
+    {
+        collider = default!;
+        if (!TryGetWindowSnapshot(monitorBounds, overlayHandle, hWnd, out var snapshot)
+            || !DesktopWindowFilter.ShouldUseWindow(snapshot, monitorBounds))
         {
             return false;
         }
