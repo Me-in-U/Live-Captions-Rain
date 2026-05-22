@@ -46,10 +46,10 @@ public static class WordFractureService
             return [];
         }
 
-        var elements = UnicodeTextElementFragmenter.DecomposeTextElements(GetTextElements(text));
+        var elements = GetTextElements(text);
         if (elements.Count <= 1)
         {
-            return elements;
+            return TryDecomposeSingleElement(elements[0]);
         }
 
         var maxFragments = Math.Min(MaxRandomFragmentCount, elements.Count);
